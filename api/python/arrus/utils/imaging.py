@@ -2282,6 +2282,30 @@ class ReconstructLri(Operation):
         self._kernel(self.grid_size, self.block_size, params)
         return self.output_buffer
 
+    def get_parameters(self) -> Dict[str, ParameterDef]:
+        params = [
+            ParameterDef(
+                name="rx_tang_limits",
+                space=Box(
+                    shape=(2,),
+                    dtype=np.float32,
+                    low=(-10.0, 0.0)
+                    high=(0.0, 10.0)
+                ),
+            ),
+        ]
+        return dict(((p.name, p) for p in params))
+
+    def set_parameter(self, key: str, value: Sequence[Number]):
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        setattr(self, key, value)
+
+    def get_parameter(self, key: str) -> Sequence[Number]:
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        return getattr(self, key)
+    
     def _assert_unique(self, seq: TxRxSequence, getter: Callable, name: str):
         s = {getter(op) for op in seq.ops}
         if len(s) > 1:
