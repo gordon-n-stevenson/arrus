@@ -1004,6 +1004,7 @@ class Decimation(Operation):
         :param decimation_factor: decimation factor to apply
         """
         self.decimation_factor = decimation_factor
+        self.cic_order = cic_order
         self.xp = num_pkg
         if filter_type == "cic":
             self.filter_coeffs = self._get_cic_filter_coeffs(
@@ -1028,6 +1029,38 @@ class Decimation(Operation):
         for _ in range(order):
             cicFir = np.convolve(cicFir, cicFir1, 'full')
         return cicFir
+    
+    def set_parameter(self, key: str, value: Sequence[Number]):
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        setattr(self, key, value)
+
+    def get_parameter(self, key: str) -> Sequence[Number]:
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        return getattr(self, key)
+
+    def get_parameters(self) -> Dict[str, ParameterDef]:
+        return {
+            "decimation_factor": ParameterDef(
+                name="decimation_factor",
+                space=Box(
+                    shape=(1, ),
+                    dtype=int,
+                    low=-np.inf,
+                    high=np.inf
+                ),
+            ),
+            "cic_order": ParameterDef(
+                name="cic_order",
+                space=Box(
+                    shape=(1, ),
+                    dtype=int,
+                    low=-np.inf,
+                    high=np.inf
+                ),
+            )
+        }
 
     def prepare(self, const_metadata):
         new_fs = (const_metadata.data_description.sampling_frequency
@@ -2096,6 +2129,40 @@ class ReconstructLri(Operation):
     def set_pkgs(self, num_pkg, **kwargs):
         if num_pkg is np:
             raise ValueError("ReconstructLri operation is implemented for GPU only.")
+
+    def set_parameter(self, key: str, value: Sequence[Number]):
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        setattr(self, key, value)
+
+    def get_parameter(self, key: str) -> Sequence[Number]:
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        return getattr(self, key)
+
+    def get_parameters(self) -> Dict[str, ParameterDef]:
+        return {
+            "min_tang": ParameterDef(
+                name="min_tang",
+                space=Box(
+                    shape=(1, ),
+                    dtype=np.float32,
+                    unit=Unit.rad,
+                    low=-np.inf,
+                    high=np.inf
+                ),
+            ),
+            "max_tang": ParameterDef(
+                name="max_tang",
+                space=Box(
+                    shape=(1, ),
+                    dtype=np.float32,
+                    unit=Unit.rad,
+                    low=-np.inf,
+                    high=np.inf
+                ),
+            )
+        }
 
     def prepare(self, const_metadata):
         import cupy as cp
