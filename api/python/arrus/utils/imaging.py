@@ -1041,7 +1041,7 @@ class Decimation(Operation):
         if filter_type == "cic":
             self.filter_coeffs = self._get_cic_filter_coeffs(
                 decimation_factor=self.decimation_factor,
-                order=cic_order
+                order=self.cic_order
             )
         elif filter_type == "fir":
             if filter_coeffs is None:
