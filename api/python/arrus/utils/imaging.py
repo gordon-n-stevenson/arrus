@@ -782,7 +782,7 @@ class BandpassFilter(Operation):
         """
         self.taps = None
         self.order = order
-        self.bound_l, self.bound_r = bounds
+        self.lower_bound, self.upper_bound = bounds
         self.filter_type = filter_type
         self.xp = num_pkg
         self.filter_pkg = filter_pkg
@@ -792,8 +792,40 @@ class BandpassFilter(Operation):
         self.xp = num_pkg
         self.filter_pkg = filter_pkg
 
+    def set_parameter(self, key: str, value: Sequence[Number]):
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        setattr(self, key, value)
+
+    def get_parameter(self, key: str) -> Sequence[Number]:
+        if not hasattr(self, key):
+            raise ValueError(f"{type(self).__name__} has no {key} parameter.")
+        return getattr(self, key)
+
+    def get_parameters(self) -> Dict[str, ParameterDef]:
+        return {
+            "lower_bound": ParameterDef(
+                name="lower_bound",
+                space=Box(
+                    shape=(1, ),
+                    dtype=float,
+                    low=0.0,
+                    high=2.0,
+                ),
+            ),
+            "upper_bound": ParameterDef(
+                name="upper_bound",
+                space=Box(
+                    shape=(1, ),
+                    dtype=float,
+                    low=1.0,
+                    high=3.0
+                ),
+            )
+        }
+
     def prepare(self, const_metadata: arrus.metadata.ConstMetadata):
-        l, r = self.bound_l, self.bound_r
+        l, r = self.lower_bound, self.upper_bound
         center_frequency = _get_unique_center_frequency(const_metadata.context.sequence)
         sampling_frequency = const_metadata.data_description.sampling_frequency
         band = [l * center_frequency, r * center_frequency]
@@ -1029,7 +1061,7 @@ class Decimation(Operation):
         for _ in range(order):
             cicFir = np.convolve(cicFir, cicFir1, 'full')
         return cicFir
-    
+
     def set_parameter(self, key: str, value: Sequence[Number]):
         if not hasattr(self, key):
             raise ValueError(f"{type(self).__name__} has no {key} parameter.")
