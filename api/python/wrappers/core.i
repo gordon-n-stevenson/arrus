@@ -157,6 +157,30 @@ namespace std {
     }
 %}
 
+%typemap(in) std::optional<std::string> %{
+    if($input == Py_None) {
+        $1 = std::optional<std::string>();
+    }
+    else {
+        const char* value = PyUnicode_AsUTF8($input);
+        if(!value) {
+            PyErr_SetString(PyExc_ValueError, "Expected string or None");
+            return NULL;
+        }
+        $1 = std::optional<std::string>(value);
+    }
+%}
+
+%typemap(out) std::optional<std::string> %{
+    if($1) {
+        $result = PyUnicode_FromString($1->c_str());
+    }
+    else {
+        $result = Py_None;
+        Py_INCREF(Py_None);
+    }
+%}
+
 
 
 %module(directors="1") core
@@ -558,6 +582,7 @@ void Arrus2dArrayVectorPushBack(
 // Turn on globally value wrappers
 %feature("valuewrapper");
 %{
+#include "arrus/core/api/devices/us4r/GpuSettings.h"
 #include "arrus/core/api/devices/us4r/WatchdogSettings.h"
 #include "arrus/core/api/devices/us4r/RxSettings.h"
 #include "arrus/core/api/devices/us4r/Us4OEMSettings.h"
@@ -575,6 +600,7 @@ using namespace ::arrus::devices;
 %};
 
 %include "arrus/core/api/devices/us4r/WatchdogSettings.h";
+%include "arrus/core/api/devices/us4r/GpuSettings.h";
 %include "arrus/core/api/devices/us4r/RxSettings.h";
 %include "arrus/core/api/devices/us4r/Us4OEMSettings.h";
 %ignore operator<<(std::ostream &os, const ProbeAdapterModelId &id);

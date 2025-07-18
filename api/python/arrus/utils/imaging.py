@@ -382,10 +382,15 @@ class ProcessingRunner:
         READY = 1
         CLOSED = 2
 
-    def __init__(self, input_buffer, metadata, processing):
+    def __init__(self, input_buffer, metadata, processing, gpu_memory_limit: str = None):
         import cupy as cp
         self.cp = cp
         self._log_gpu_info()
+
+        # Set GPU memory limit if provided
+        if gpu_memory_limit:
+            self._set_gpu_memory_limit(gpu_memory_limit)
+
         # Input buffer, stored in the host PC memory.
         self.host_input_buffer = input_buffer
         self.processing = processing
@@ -420,6 +425,72 @@ class ProcessingRunner:
         self._state = ProcessingRunner.State.READY
         self._process_lock = threading.Lock()
         self._state_lock = threading.Lock()
+
+    def _set_gpu_memory_limit(self, memory_limit_str: str):
+        """
+        Set the GPU memory limit using CuPy's default memory pool.
+
+        :param memory_limit_str: Memory limit as a string (e.g., "6GB", "2GB")
+        """
+        if not memory_limit_str:
+            return
+
+        memory_limit_str = memory_limit_str.upper().strip()
+
+        # Parse the number and unit
+        import re
+        match = re.match(r'^(\d+(?:\.\d+)?)\s*(GB|MB|KB|B)?$', memory_limit_str)
+        if not match:
+            raise ValueError(f"Invalid memory limit format: {memory_limit_str}. Expected format like '6GB', '2GB', '512MB'")
+
+        number = float(match.group(1))
+        unit = match.group(2) or 'B'
+
+        # Convert to bytes
+        multipliers = {'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3}
+        if unit not in multipliers:
+            raise ValueError(f"Invalid memory unit: {unit}. Supported units: B, KB, MB, GB")
+
+        memory_limit_bytes = int(number * multipliers[unit])
+
+        # Set the memory limit on CuPy's default memory pool
+        self.cp.get_default_memory_pool().set_limit(size=memory_limit_bytes)
+
+        arrus.logging.log(arrus.logging.INFO, 
+                         f"CuPy memory pool limit set to: {memory_limit_str} ({memory_limit_bytes} bytes)")
+
+    def set_gpu_memory_limit(self, memory_limit_str: str):
+        """
+        Set the GPU memory limit for this processing runner.
+
+        :param memory_limit_str: Memory limit as a string (e.g., "6GB", "2GB")
+        """
+        self._set_gpu_memory_limit(memory_limit_str)
+        arrus.logging.log(arrus.logging.INFO, f"ProcessingRunner GPU memory limit set to: {memory_limit_str}")
+
+    def get_gpu_memory_info(self) -> Dict[str, Union[int, str]]:
+        """
+        Get GPU memory pool information.
+
+        :return: Dictionary with memory pool information
+        """
+        pool = self.cp.get_default_memory_pool()
+        used = pool.used_bytes()
+        total = pool.total_bytes()
+        limit = pool.get_limit()
+
+        info = {
+            'current_usage_bytes': used,
+            'current_usage_mb': used / (1024**2),
+            'total_allocated_bytes': total,
+            'total_allocated_mb': total / (1024**2),
+            'limit_bytes': limit,
+            'limit_mb': limit / (1024**2) if limit else None,
+            'available_bytes': limit - used if limit else None,
+            'available_mb': (limit - used) / (1024**2) if limit else None,
+            'usage_percentage': (used / limit * 100) if limit else None
+        }
+        return info
 
     def get_parameter(self, key):
         return self.processing.get_parameter(key)
@@ -697,7 +768,6 @@ class ProcessingRunner:
             cp.cuda.runtime.hostUnregister(data_getter(element).ctypes.data)
 
     def _log_gpu_info(self):
-        import arrus.logging
         ngpus = self.cp.cuda.runtime.getDeviceCount()
         arrus.logging.log(arrus.logging.INFO, f"NVIDIA CUDA Toolkit version: {self.cp.cuda.runtime.runtimeGetVersion()}")
         arrus.logging.log(arrus.logging.INFO, f"NVIDIA CUDA driver version: {self.cp.cuda.runtime.driverGetVersion()}")

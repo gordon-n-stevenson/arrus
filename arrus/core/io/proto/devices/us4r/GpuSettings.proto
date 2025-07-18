@@ -1,0 +1,8 @@
+syntax  = "proto3";
+
+package arrus.proto;
+
+message GpuSettings {
+  // Memory limit for GPU operations (e.g., "6GB", "2GB", "512MB")
+  string memory_limit = 1;
+} 

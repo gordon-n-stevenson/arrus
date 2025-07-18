@@ -361,8 +361,19 @@ class Session(AbstractSession):
                     graph=processing,
                     callback=None,
                 )
+            # Get GPU memory limit from settings if available
+            gpu_memory_limit = None
+            if hasattr(self._session_handle, 'getUs4RSettings'):
+                us4r_settings = self._session_handle.getUs4RSettings()
+                if hasattr(us4r_settings, 'getGpuSettings'):
+                    gpu_settings = us4r_settings.getGpuSettings()
+                    if (hasattr(gpu_settings, 'getMemoryLimit') and 
+                        gpu_settings.getMemoryLimit()):
+                        gpu_memory_limit = gpu_settings.getMemoryLimit()
+            
             processing_runner = _imaging.ProcessingRunner(
                 input_buffer=buffer, metadata=metadatas, processing=processing,
+                gpu_memory_limit=gpu_memory_limit
             )
             outputs = processing_runner.outputs
             self._current_processing = processing_runner

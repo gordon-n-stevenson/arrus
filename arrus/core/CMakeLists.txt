@@ -26,6 +26,7 @@ protobuf_generate_cpp(PROTO_SRC PROTO_HDRS
     io/proto/devices/us4r/Bitstream.proto
     io/proto/devices/us4r/Us4RTxRxLimits.proto
     io/proto/devices/us4r/WatchdogSettings.proto
+    io/proto/devices/us4r/GpuSettings.proto
 )
 ################################################################################
 # Target
@@ -204,10 +205,11 @@ set(SRC_FILES
     api/devices/us4r/Us4RTxRxLimits.h
     devices/us4r/TxTimeoutRegister.h
     devices/us4r/Us4RSubsequence.h
-    devices/us4r/types.h
+    devices/us4r/types.h    
     api/devices/us4r/WatchdogSettings.h
     api/devices/probe/Lens.h
     api/devices/probe/MatchingLayer.h
+    api/devices/probe/GPUSettings.h
     api/version.h
     common/os.h
     version.cpp.in
@@ -328,6 +330,12 @@ if (ARRUS_RUN_TESTS)
         "" # no additional source files
         "protobuf::libprotobuf;arrus-core"
         "-DARRUS_TEST_DATA_PATH=\"${ARRUS_CORE_IO_TEST_DATA}\"")
+    create_core_test(io/validators/GpuSettingsProtoValidatorTest.cpp
+        "" # no additional source files
+        "protobuf::libprotobuf;arrus-core;CUDA::cudart")
+    create_core_test(api/devices/us4r/GpuSettingsTest.cpp
+        "" # no additional source files
+        "arrus-core")
     create_core_test(devices/us4r/us4oem/IRQEventTest.cpp common/logging.cpp)
 
     create_core_test(devices/us4r/TxTimeoutRegisterFactoryTest.cpp common/logging.cpp)

@@ -199,6 +199,38 @@ TEST(ReadingProtoTxtFile, readFileDeviceCorrectly) {
     EXPECT_EQ(fileSettings.getProbeModel().getNumberOfElements().get(0), 192);
 }
 
+TEST(ReadingProtoTxtFile, readsUs4RWithGpuSettingsCorrectly) {
+    auto filepath = boost::filesystem::path(ARRUS_TEST_DATA_PATH) / boost::filesystem::path("us4r_with_gpu.prototxt");
+    SessionSettings settings = arrus::io::readSessionSettings(filepath.string());
+    auto const &us4rSettings = settings.getUs4RSettings();
+    
+    // Verify GPU settings are present
+    auto const &gpuSettings = us4rSettings.getGpuSettings();
+    EXPECT_TRUE(gpuSettings.getMemoryLimit().has_value());
+    EXPECT_EQ(gpuSettings.getMemoryLimit().value(), "6GB");
+}
+
+TEST(ReadingProtoTxtFile, readsUs4RWithSmallGpuLimitCorrectly) {
+    auto filepath = boost::filesystem::path(ARRUS_TEST_DATA_PATH) / boost::filesystem::path("us4r_with_gpu_small_limit.prototxt");
+    SessionSettings settings = arrus::io::readSessionSettings(filepath.string());
+    auto const &us4rSettings = settings.getUs4RSettings();
+    
+    // Verify GPU settings are present
+    auto const &gpuSettings = us4rSettings.getGpuSettings();
+    EXPECT_TRUE(gpuSettings.getMemoryLimit().has_value());
+    EXPECT_EQ(gpuSettings.getMemoryLimit().value(), "2GB");
+}
+
+TEST(ReadingProtoTxtFile, readsUs4RWithoutGpuSettingsCorrectly) {
+    auto filepath = boost::filesystem::path(ARRUS_TEST_DATA_PATH) / boost::filesystem::path("us4r.prototxt");
+    SessionSettings settings = arrus::io::readSessionSettings(filepath.string());
+    auto const &us4rSettings = settings.getUs4RSettings();
+    
+    // Verify GPU settings are not present (default settings)
+    auto const &gpuSettings = us4rSettings.getGpuSettings();
+    EXPECT_FALSE(gpuSettings.getMemoryLimit().has_value());
+}
+
 int main(int argc, char **argv) {
     ARRUS_INIT_TEST_LOG(arrus::Logging);
     ::testing::InitGoogleTest(&argc, argv);

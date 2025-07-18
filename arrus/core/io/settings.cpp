@@ -541,6 +541,13 @@ Us4RSettings readUs4RSettings(const proto::Us4RSettings &us4r, const SettingsDic
             watchdog = WatchdogSettings::disabled();
         }
     }
+    
+    GpuSettings gpu = GpuSettings::defaultSettings();
+    if(us4r.has_gpu()) {
+        if(!us4r.gpu().memory_limit().empty()) {
+            gpu = GpuSettings(us4r.gpu().memory_limit());
+        }
+    }
 
     ProbeAdapterSettings adapterSettings = readOrGetAdapterSettings(us4r, dictionary);
     std::vector<ProbeSettings> probeSettings =
@@ -566,7 +573,8 @@ Us4RSettings readUs4RSettings(const proto::Us4RSettings &us4r, const SettingsDic
             digitalBackplaneSettings,
             bitstreams,
             limits,
-            watchdog
+            watchdog,
+            gpu
     };
 }
 Us4OEMSettings::ReprogrammingMode convertToReprogrammingMode(proto::Us4OEMSettings_ReprogrammingMode mode) {
